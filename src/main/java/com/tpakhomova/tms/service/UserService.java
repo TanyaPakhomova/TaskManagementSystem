@@ -1,10 +1,12 @@
 package com.tpakhomova.tms.service;
 
 import com.tpakhomova.tms.data.User;
+import org.springframework.stereotype.Component;
 
 /**
  * Service that is responcible for CRD operation for {@link User}.
  */
+@Component
 public interface UserService {
     /**
      * Finds a user by email.

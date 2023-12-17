@@ -1,39 +1,35 @@
 package com.tpakhomova.tms.service.impl;
 
 import com.tpakhomova.tms.data.User;
+import com.tpakhomova.tms.persistence.UserRepository;
 import com.tpakhomova.tms.service.UserService;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
 
+@Component
 public class UserServiceImpl implements UserService {
-    private final List<User> users = new ArrayList<>();
+   private final UserRepository userRepository;
+
+    public UserServiceImpl(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
 
     @Override
     public User findUser(String email) {
-        for (var u: users) {
-            if (u.getEmail().equals(email)) {
-                return u;
-            }
-        }
-        return null;
+        return userRepository.findByEmail(email).get();
     }
 
     @Override
     public boolean createUser(User user) {
-        users.add(user);
+        userRepository.save(user);
         return true;
     }
 
     @Override
     public boolean deleteUser(String email) {
-        for (var u: users) {
-            if (u.getEmail().equals(email)) {
-                users.remove(u);
-                return true;
-            }
-        }
-
-        return false;
+        userRepository.deleteByEmail(email);
+        return true;
     }
 }

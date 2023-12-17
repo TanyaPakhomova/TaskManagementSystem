@@ -1,10 +1,18 @@
 package com.tpakhomova.tms.service;
 
 import com.tpakhomova.tms.data.*;
+import com.tpakhomova.tms.persistence.CommentsRepository;
+import com.tpakhomova.tms.persistence.TaskRepository;
+import com.tpakhomova.tms.persistence.UserRepository;
 import com.tpakhomova.tms.service.impl.TaskManagementServiceImpl;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -12,12 +20,26 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@ExtendWith(SpringExtension.class)
+@DataJpaTest
 class TaskManagementServiceTest {
+    @Autowired
     TaskManagementService service;
+
+    @Autowired
+    UserRepository userRepository;
+
+    @Autowired
+    TaskRepository taskRepository;
+
+    @Autowired
+    CommentsRepository commentsRepository;
 
     @BeforeEach
     void setUp() {
-        service = new TaskManagementServiceImpl();
+        taskRepository.deleteAll();
+        commentsRepository.deleteAll();
+//        userRepository.deleteAll();
     }
 
     @Test
@@ -94,7 +116,7 @@ class TaskManagementServiceTest {
 
         List<Comment> commentsForTask = service.findCommentsForTask(task.getId());
         assertNotNull(commentsForTask);
-        assertTrue(commentsForTask.size() == 1);
+        assertEquals(1, commentsForTask.size());
         assertEquals(commentsForTask.get(0), comment);
 
         assertTrue(service.deleteComment(comment.getCommentId()));

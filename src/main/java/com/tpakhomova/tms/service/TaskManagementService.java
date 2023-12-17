@@ -3,12 +3,14 @@ package com.tpakhomova.tms.service;
 import com.tpakhomova.tms.data.Comment;
 import com.tpakhomova.tms.data.Status;
 import com.tpakhomova.tms.data.Task;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 
 /**
  * Task Management Service. Performs main CRUD operations on {@code Task} and {@code Comment}.
  */
+@Component
 public interface TaskManagementService {
     /**
      * Finds task by id.

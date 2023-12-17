@@ -5,18 +5,17 @@ import com.tpakhomova.tms.data.User;
 import com.tpakhomova.tms.service.impl.UserServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.testcontainers.shaded.org.checkerframework.checker.signature.qual.CanonicalName;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@SpringBootTest
 class UserServiceTest {
 
+    @Autowired
     UserService userService;
-
-    @BeforeEach
-    void setUp() {
-        userService = new UserServiceImpl();
-    }
 
     @Test
     void createUser() {
@@ -80,6 +79,6 @@ class UserServiceTest {
 
 
     User user(String email) {
-        return new User(email + "_user", "123", email, "Pavel","Popov");
+        return new User(1L, email + "_user", "123", email, "Pavel","Popov");
     }
 }
