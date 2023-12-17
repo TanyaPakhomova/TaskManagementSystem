@@ -3,22 +3,22 @@ package com.tpakhomova.tms.data;
 import java.util.List;
 
 public class Task {
+    private final Long id;
     private final String header;
     private final String description;
     private final Status status;
     private final Priority priority;
-    private final User author;
-    private final User assignee;
-    private final List<Comment> comments;
+    private final String authorEmail;
+    private final String assigneeEmail;
 
-    public Task(String header, String description, Status status, Priority priority, User author, User assignee, List<Comment> comments) {
+    public Task(Long id, String header, String description, Status status, Priority priority, String authorEmail, String assigneeEmail) {
+        this.id = id;
         this.header = header;
         this.description = description;
         this.status = status;
         this.priority = priority;
-        this.author = author;
-        this.assignee = assignee;
-        this.comments = comments;
+        this.authorEmail = authorEmail;
+        this.assigneeEmail = assigneeEmail;
     }
 
     public String getHeader() {
@@ -37,15 +37,15 @@ public class Task {
         return priority;
     }
 
-    public User getAuthor() {
-        return author;
+    public String getAuthorEmail() {
+        return authorEmail;
     }
 
-    public User getAssignee() {
-        return assignee;
+    public String getAssigneeEmail() {
+        return assigneeEmail;
     }
 
-    public List<Comment> getComments() {
-        return comments;
+    public Long getId() {
+        return id;
     }
 }

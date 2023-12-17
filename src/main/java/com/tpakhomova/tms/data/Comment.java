@@ -3,18 +3,30 @@ package com.tpakhomova.tms.data;
 import java.sql.Timestamp;
 
 public class Comment {
-    private final User author;
+    private final Long commentId;
+    private final Long taskId;
+    private final String authorEmail;
     private final String text;
     private final Timestamp createdAt;
 
-    public Comment(User author, String text, Timestamp createdAt) {
-        this.author = author;
+    public Comment(Long commentId, Long taskId, String authorEmail, String text, Timestamp createdAt) {
+        this.commentId = commentId;
+        this.taskId = taskId;
+        this.authorEmail = authorEmail;
         this.text = text;
         this.createdAt = createdAt;
     }
 
-    public User getAuthor() {
-        return author;
+    public Long getCommentId() {
+        return commentId;
+    }
+
+    public Long getTaskId() {
+        return taskId;
+    }
+
+    public String getAuthorEmail() {
+        return authorEmail;
     }
 
     public String getText() {
