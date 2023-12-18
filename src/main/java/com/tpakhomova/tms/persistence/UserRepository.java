@@ -1,14 +1,14 @@
 package com.tpakhomova.tms.persistence;
 
-import com.tpakhomova.tms.data.User;
+import com.tpakhomova.tms.persistence.data.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
 @Repository
-public interface UserRepository extends JpaRepository<User, Long> {
-    Optional<User> findByEmail(String email);
+public interface UserRepository extends JpaRepository<UserEntity, Long> {
+    Optional<UserEntity> findByEmail(String email);
 
-    Optional<User> deleteByEmail(String email);
+    void deleteByEmail(String email);
 }

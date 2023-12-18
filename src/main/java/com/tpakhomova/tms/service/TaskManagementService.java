@@ -23,16 +23,15 @@ public interface TaskManagementService {
     /**
      * Creates task.
      *
-     * @return {@code true} if task was created or {@code false} if there is such task.
+     * @return task id if task was created or {@code null}.
      */
-    boolean createTask(Task task);
+     Long createTask(Task task);
 
     /**
      * Deletes task by id.
      * @param id task id.
      * @return {@code true} if task was deleted or {@code false} if there no task with such id.
      */
-
     boolean deleteTask(Long id);
 
     /**
@@ -65,9 +64,9 @@ public interface TaskManagementService {
     /**
      * Adds comment to the task. Given comment should contain existing user email and task id.
      *
-     * @return {@code true} if comment was added or {@code false} if there is no task or user.
+     * @return comment id if comment was created of  {@code null}.
      */
-    boolean addComment(Comment comment);
+    Long addComment(Comment comment);
 
     /**
      * Find all comments for task.

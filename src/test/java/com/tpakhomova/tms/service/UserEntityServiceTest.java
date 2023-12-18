@@ -2,17 +2,25 @@ package com.tpakhomova.tms.service;
 
 
 import com.tpakhomova.tms.data.User;
-import com.tpakhomova.tms.service.impl.UserServiceImpl;
-import org.junit.jupiter.api.BeforeEach;
+import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.testcontainers.shaded.org.checkerframework.checker.signature.qual.CanonicalName;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
-class UserServiceTest {
+@Testcontainers
+@Transactional
+class UserEntityServiceTest {
+
+    @Container
+    @ServiceConnection
+    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15-alpine");
 
     @Autowired
     UserService userService;
@@ -27,9 +35,9 @@ class UserServiceTest {
         var createResult = userService.createUser(user);
         assertTrue(createResult);
 
-        User userFromService = userService.findUser(user.getEmail());
-        assertNotNull(userFromService);
-        assertEquals(user, userFromService);
+        User userEntityFromService = userService.findUser(user.getEmail());
+        assertNotNull(userEntityFromService);
+        assertEquals(user, userEntityFromService);
     }
 
     @Test
@@ -79,6 +87,6 @@ class UserServiceTest {
 
 
     User user(String email) {
-        return new User(1L, email + "_user", "123", email, "Pavel","Popov");
+        return new User( null,email + "_user", "123", email, "Pavel", "Popov");
     }
 }

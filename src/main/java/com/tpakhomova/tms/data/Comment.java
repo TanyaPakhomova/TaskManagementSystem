@@ -1,16 +1,12 @@
 package com.tpakhomova.tms.data;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 
 import java.sql.Timestamp;
 import java.util.Objects;
 
-@Entity
 public class Comment {
-    @Id
-    @GeneratedValue
+
     private final Long commentId;
     private final Long taskId;
     private final String authorEmail;
@@ -50,11 +46,22 @@ public class Comment {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Comment comment = (Comment) o;
-        return Objects.equals(commentId, comment.commentId) && Objects.equals(taskId, comment.taskId) && Objects.equals(authorEmail, comment.authorEmail) && Objects.equals(text, comment.text) && Objects.equals(createdAt, comment.createdAt);
+        return Objects.equals(taskId, comment.taskId) && Objects.equals(authorEmail, comment.authorEmail) && Objects.equals(text, comment.text) && Objects.equals(createdAt, comment.createdAt);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(commentId, taskId, authorEmail, text, createdAt);
+        return Objects.hash(taskId, authorEmail, text, createdAt);
+    }
+
+    @Override
+    public String toString() {
+        return "Comment{" +
+                "commentId=" + commentId +
+                ", taskId=" + taskId +
+                ", authorEmail='" + authorEmail + '\'' +
+                ", text='" + text + '\'' +
+                ", createdAt=" + createdAt +
+                '}';
     }
 }

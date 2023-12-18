@@ -1,10 +1,12 @@
 package com.tpakhomova.tms.service;
 
 import com.tpakhomova.tms.data.User;
+import com.tpakhomova.tms.persistence.data.UserEntity;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Component;
 
 /**
- * Service that is responcible for CRD operation for {@link User}.
+ * Service that is responcible for CRD operation for {@link UserEntity}.
  */
 @Component
 public interface UserService {
