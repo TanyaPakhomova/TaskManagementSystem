@@ -37,6 +37,22 @@ public class TaskManagementServiceImpl implements TaskManagementService {
     }
 
     @Override
+    public List<Task> findTasksByAuthor(String authorEmail) {
+        return taskRepository.findByAuthorEmail(authorEmail)
+                .stream()
+                .map(this::convertTaskEntity)
+                .toList();
+    }
+
+    @Override
+    public List<Task> findTasksByAssignee(String assigneeEmail) {
+        return taskRepository.findByAssigneeEmail(assigneeEmail)
+                .stream()
+                .map(this::convertTaskEntity)
+                .toList();
+    }
+
+    @Override
     public  Long createTask(Task task) {
         if (findTask(task.getId()) != null) {
             return null;

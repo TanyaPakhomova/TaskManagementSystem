@@ -1,21 +1,21 @@
 package com.tpakhomova.tms.controller;
 
-import com.tpakhomova.tms.api.Credentials;
-import com.tpakhomova.tms.api.User;
+import com.tpakhomova.tms.api.*;
 import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -26,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Testcontainers
 class DemoTest {
     static final User TANYA_USER = new User("tanya", "123456789", "email@mail.com", "Tanya", "Pakhomova");
+    static final User DIMA_USER = new User("dime", "wwwwwwwww", "dima@mail.com", "Dima", "Ivanov");
     @Container
     @ServiceConnection
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15-alpine");
@@ -51,17 +52,23 @@ class DemoTest {
         ResponseEntity<String> result = rest.exchange(
                 url("/unregister/" + TANYA_USER.email()),
                 HttpMethod.DELETE,
-                authorizedHeader(token),
+                authorized(token),
                 String.class
         );
         assertThat(result.getStatusCode().is2xxSuccessful()).isTrue();
     }
 
     @NotNull
-    private static HttpEntity<Object> authorizedHeader(String token) {
+    private static HttpEntity<Object> authorized(String token) {
+        HttpHeaders headers = jwtHeader(token);
+        return new HttpEntity<>(headers);
+    }
+
+    @NotNull
+    private static HttpHeaders jwtHeader(String token) {
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(token);
-        return new HttpEntity<>(headers);
+        return headers;
     }
 
     @Test
@@ -120,7 +127,7 @@ class DemoTest {
         ResponseEntity<String> result = rest.exchange(
                 url("/unregister/" + "wrongemail"),
                 HttpMethod.DELETE,
-                authorizedHeader(token),
+                authorized(token),
                 String.class
         );
         assertThat(result.getStatusCode().is4xxClientError()).isTrue();
@@ -129,7 +136,7 @@ class DemoTest {
         result = rest.exchange(
                 url("/unregister/" + TANYA_USER.email()),
                 HttpMethod.DELETE,
-                authorizedHeader(""),
+                authorized(""),
                 String.class
         );
         assertThat(result.getStatusCode().is4xxClientError()).isTrue();
@@ -138,13 +145,146 @@ class DemoTest {
         result = rest.exchange(
                 url("/unregister/" + TANYA_USER.email()),
                 HttpMethod.DELETE,
-                authorizedHeader(token),
+                authorized(token),
                 String.class
         );
         assertThat(result.getStatusCode().is2xxSuccessful()).isTrue();
     }
 
+    @Test
+    @DisplayName("This is the base test for task management system")
+    void taskManagementBaseTest() {
+        // Register two users
+        assertThat(rest.postForObject(url("/register"), TANYA_USER, String.class))
+                .contains("Registered successfully");
+        assertThat(rest.postForObject(url("/register"), DIMA_USER, String.class))
+                .contains("Registered successfully");
 
+        // Login as tanya
+        String token = rest.postForObject(
+                url("/login"),
+                new Credentials(TANYA_USER.email(), TANYA_USER.passHash()),
+                String.class
+        );
+
+        // Create task for dima
+        CreateTaskReq task1Req = new CreateTaskReq(
+                "Dima's first task",
+                "You should pass the interview",
+                Status.PROCESS,
+                Priority.MEDIUM,
+                TANYA_USER.email(),
+                DIMA_USER.email()
+        );
+        HttpStatusCode code = rest.exchange(
+                url("/tasks"),
+                HttpMethod.POST,
+                new HttpEntity<>(task1Req, jwtHeader(token)),
+                String.class
+        ).getStatusCode();
+        assertThat(code.is2xxSuccessful()).isTrue();
+
+        // Create task for tanya
+        CreateTaskReq task2req = new CreateTaskReq(
+                "Tanya's first task",
+                "I should pass the interview 100%",
+                Status.PROCESS,
+                Priority.HIGH,
+                TANYA_USER.email(),
+                TANYA_USER.email()
+        );
+        code = rest.exchange(
+                url("/tasks"),
+                HttpMethod.POST,
+                new HttpEntity<>(task2req, jwtHeader(token)),
+                String.class
+        ).getStatusCode();
+        assertThat(code.is2xxSuccessful()).isTrue();
+
+        // GET by author
+        TaskList taskList = rest.exchange(
+                url("/tasks/author/" + TANYA_USER.email()),
+                HttpMethod.GET,
+                new HttpEntity<>(jwtHeader(token)),
+                TaskList.class
+        ).getBody();
+
+        assertThat(taskList.tasks()).hasSize(2);
+
+        Set<String> authorEmails = taskList.tasks()
+                .stream()
+                .map(Task::authorEmail)
+                .collect(Collectors.toSet());
+
+        // Only tanya is author
+        assertThat(authorEmails).contains(TANYA_USER.email());
+        assertThat(authorEmails).hasSize(1);
+
+        // GET by assignee for dima
+        taskList = rest.exchange(
+                url("/tasks/assignee/" + DIMA_USER.email()),
+                HttpMethod.GET,
+                new HttpEntity<>(jwtHeader(token)),
+                TaskList.class
+        ).getBody();
+
+        assertThat(taskList.tasks()).hasSize(1);
+        assertThat(taskList.tasks().get(0).assigneeEmail()).isEqualTo(DIMA_USER.email());
+
+        // GET by assignee for tanya
+        taskList = rest.exchange(
+                url("/tasks/assignee/" + TANYA_USER.email()),
+                HttpMethod.GET,
+                new HttpEntity<>(jwtHeader(token)),
+                TaskList.class
+        ).getBody();
+
+        assertThat(taskList.tasks()).hasSize(1);
+        assertThat(taskList.tasks().get(0).assigneeEmail()).isEqualTo(TANYA_USER.email());
+
+        // Edit task
+        Task taskToUpdate = taskList.tasks().get(0);
+        var taskIdToUptate = taskToUpdate.id();
+        code = rest.exchange(
+                url("/tasks/" + taskIdToUptate),
+                HttpMethod.PUT,
+                new HttpEntity<>(new CreateTaskReq(
+                        "New updated header", taskToUpdate.description(),
+                        taskToUpdate.status(), taskToUpdate.priority(),
+                        taskToUpdate.authorEmail(), taskToUpdate.assigneeEmail()
+                ), jwtHeader(token)),
+                String.class
+        ).getStatusCode();
+        assertThat(code.is2xxSuccessful()).isTrue();
+
+        // GET by assignee for dima
+        Task updatedTask = rest.exchange(
+                url("/tasks/" + taskIdToUptate),
+                HttpMethod.GET,
+                new HttpEntity<>(jwtHeader(token)),
+                Task.class
+        ).getBody();
+
+        assertThat(updatedTask.header()).isEqualTo("New updated header");
+
+        // Delete task by id
+        code = rest.exchange(
+                url("/tasks/" + taskIdToUptate),
+                HttpMethod.DELETE,
+                authorized(token),
+                String.class
+        ).getStatusCode();
+        assertThat(code.is2xxSuccessful()).isTrue();
+
+        code = rest.exchange(
+                url("/tasks/" + taskIdToUptate),
+                HttpMethod.GET,
+                authorized(token),
+                Void.class
+        ).getStatusCode();
+
+        assertThat(code.is4xxClientError()).isTrue();
+    }
 
     @NotNull
     private String url(String path) {

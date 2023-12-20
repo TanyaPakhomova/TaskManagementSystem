@@ -21,6 +21,22 @@ public interface TaskManagementService {
     Task findTask(Long id);
 
     /**
+     * Finds tasks by author email. Will return all tasks that have been created by this author.
+     *
+     * @param authorEmail author email.
+     * @return list of tasks if there is such user or {@code null} if user does not exist.
+     */
+    List<Task> findTasksByAuthor(String authorEmail);
+
+    /**
+     * Finds tasks by assignee email. Will return all tasks that are assigned to assigneeEmail.
+     *
+     * @param assigneeEmail assignee email.
+     * @return list of tasks if there is such user or {@code null} if user does not exist.
+     */
+    List<Task> findTasksByAssignee(String assigneeEmail);
+
+    /**
      * Creates task.
      *
      * @return task id if task was created or {@code null}.

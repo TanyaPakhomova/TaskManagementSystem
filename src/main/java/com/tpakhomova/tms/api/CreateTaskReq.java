@@ -3,11 +3,7 @@ package com.tpakhomova.tms.api;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
-import java.util.Objects;
-
-public record Task (
-        @NotBlank
-        Long id,
+public record CreateTaskReq(
         @NotBlank
         String header,
     String description,
