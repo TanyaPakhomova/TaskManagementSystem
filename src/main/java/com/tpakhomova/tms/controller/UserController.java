@@ -2,6 +2,7 @@ package com.tpakhomova.tms.controller;
 
 import com.tpakhomova.tms.api.Credentials;
 import com.tpakhomova.tms.api.User;
+import com.tpakhomova.tms.security.JwtService;
 import com.tpakhomova.tms.service.UserService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
@@ -13,8 +14,11 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
     private final UserService userService;
 
-    public UserController(UserService userService) {
+    private final JwtService jwtService;
+
+    public UserController(UserService userService, JwtService jwtService) {
         this.userService = userService;
+        this.jwtService = jwtService;
     }
 
     @PostMapping("register")
@@ -40,9 +44,9 @@ public class UserController {
     }
 
     @PostMapping("login")
-    String hello(@RequestBody @Valid Credentials credentials) {
+    String login(@RequestBody @Valid Credentials credentials) {
         if (userService.checkEmailAndPassword(credentials.email(), credentials.password())) {
-            return "Token";
+            return jwtService.generateToken(userService.findUser(credentials.email()));
         } else {
             throw new InvalidCredentialsException();
         }

@@ -2,15 +2,17 @@ package com.tpakhomova.tms.controller;
 
 import com.tpakhomova.tms.api.Credentials;
 import com.tpakhomova.tms.api.User;
-import jakarta.transaction.Transactional;
 import org.jetbrains.annotations.NotNull;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -32,20 +34,6 @@ class DemoTest {
     @Autowired
     private TestRestTemplate rest;
 
-    @BeforeEach
-    void setUp() {
-        clearTasks();
-        clearUsers();
-    }
-
-    private void clearUsers() {
-        rest.delete(url("/unregister/" + TANYA_USER.email()));
-    }
-
-    private void clearTasks() {
-        // rest.delete(url("/tasks/remove"));
-    }
-
     @Test
     void validUserOperations() {
         // Register
@@ -58,7 +46,22 @@ class DemoTest {
                 new Credentials(TANYA_USER.email(), TANYA_USER.passHash()),
                 String.class
         );
-        assertThat(token).isEqualTo("Token");
+        assertThat(token).isNotNull();
+
+        ResponseEntity<String> result = rest.exchange(
+                url("/unregister/" + TANYA_USER.email()),
+                HttpMethod.DELETE,
+                authorizedHeader(token),
+                String.class
+        );
+        assertThat(result.getStatusCode().is2xxSuccessful()).isTrue();
+    }
+
+    @NotNull
+    private static HttpEntity<Object> authorizedHeader(String token) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(token);
+        return new HttpEntity<>(headers);
     }
 
     @Test
@@ -104,6 +107,41 @@ class DemoTest {
                 String.class
         ).getStatusCode().is4xxClientError();
         assertThat(isClientError).isTrue();
+
+        // Get token to test 'unregister' validation
+        String token = rest.postForObject(
+                url("/login"),
+                new Credentials(TANYA_USER.email(), TANYA_USER.passHash()),
+                String.class
+        );
+        assertThat(token).isNotNull();
+
+        // Wrong email
+        ResponseEntity<String> result = rest.exchange(
+                url("/unregister/" + "wrongemail"),
+                HttpMethod.DELETE,
+                authorizedHeader(token),
+                String.class
+        );
+        assertThat(result.getStatusCode().is4xxClientError()).isTrue();
+
+        // With empty token
+        result = rest.exchange(
+                url("/unregister/" + TANYA_USER.email()),
+                HttpMethod.DELETE,
+                authorizedHeader(""),
+                String.class
+        );
+        assertThat(result.getStatusCode().is4xxClientError()).isTrue();
+
+        // Valid unregister
+        result = rest.exchange(
+                url("/unregister/" + TANYA_USER.email()),
+                HttpMethod.DELETE,
+                authorizedHeader(token),
+                String.class
+        );
+        assertThat(result.getStatusCode().is2xxSuccessful()).isTrue();
     }
 
 
