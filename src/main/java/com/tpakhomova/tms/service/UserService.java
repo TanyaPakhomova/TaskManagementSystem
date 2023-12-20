@@ -40,4 +40,6 @@ public interface UserService {
      * no the user with provided email.
      */
     boolean deleteUser(String email);
+
+    boolean checkEmailAndPassword(String email, String password);
 }

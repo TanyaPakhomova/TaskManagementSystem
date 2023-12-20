@@ -1,5 +1,7 @@
 package com.tpakhomova.tms.api;
 
+import jakarta.validation.constraints.Email;
+
 import java.util.Objects;
 
-public record User (Long id, String username, String passHash, String email, String firstName, String lastName) {}
+public record User (String username, String passHash, @Email String email, String firstName, String lastName) {}

@@ -6,8 +6,10 @@ import com.tpakhomova.tms.persistence.TaskRepository;
 import com.tpakhomova.tms.persistence.data.UserEntity;
 import com.tpakhomova.tms.persistence.UserRepository;
 import com.tpakhomova.tms.service.UserService;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Component;
 
+import java.sql.SQLException;
 import java.util.Optional;
 
 @Component
@@ -27,12 +29,18 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public boolean createUser(User user) {
-        userRepository.save(convertUser(user));
+        try {
+            userRepository.save(convertUser(user));
+        } catch (Exception ex) { // probably the user with such email or username already exists
+            return false;
+        }
+
         userRepository.flush();
         return true;
     }
 
     @Override
+    @Transactional
     public boolean deleteUser(String email) {
         if (userRepository.findByEmail(email).isEmpty()) {
             return false;
@@ -40,6 +48,20 @@ public class UserServiceImpl implements UserService {
 
         userRepository.deleteByEmail(email);
         return true;
+    }
+
+    @Override
+    public boolean checkEmailAndPassword(String email, String password) {
+        User user = findUser(email);
+        if (user == null) {
+            return false;
+        }
+
+        if (user.getPassHash().equals(password)) { // todo: use hash instead of password
+            return true;
+        }
+
+        return false;
     }
 
     private User convertUserEntity(UserEntity ue) {
