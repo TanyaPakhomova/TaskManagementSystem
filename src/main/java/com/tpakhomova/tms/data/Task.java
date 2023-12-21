@@ -1,8 +1,6 @@
 package com.tpakhomova.tms.data;
 
-import jakarta.persistence.*;
 
-import java.util.List;
 import java.util.Objects;
 
 public class Task {

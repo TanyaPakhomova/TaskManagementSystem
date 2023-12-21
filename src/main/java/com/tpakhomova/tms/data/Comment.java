@@ -1,12 +1,9 @@
 package com.tpakhomova.tms.data;
 
-import jakarta.persistence.*;
-
 import java.sql.Timestamp;
 import java.util.Objects;
 
 public class Comment {
-
     private final Long commentId;
     private final Long taskId;
     private final String authorEmail;

@@ -119,6 +119,21 @@ public class TaskManagementServiceImpl implements TaskManagementService {
     }
 
     @Override
+    public boolean changePriority(Long id, com.tpakhomova.tms.data.Priority priority) {
+        if (findTask(id) == null) {
+            return false;
+        }
+
+        TaskEntity taskEntityToChangeStatus = taskRepository.findById(id).orElse(null);
+
+        taskEntityToChangeStatus.setPriority(Priority.valueOf(priority.name()));
+        taskRepository.save(taskEntityToChangeStatus);
+
+        return true;
+    }
+
+
+    @Override
     public boolean assign(Long taskId, String assigneeEmail) {
         return false; //todo
     }

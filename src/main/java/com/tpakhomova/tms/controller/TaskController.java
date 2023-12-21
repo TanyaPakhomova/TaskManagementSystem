@@ -16,15 +16,12 @@ import org.springframework.web.server.ResponseStatusException;
 @RestController
 @RequestMapping("tasks")
 public class TaskController {
-    private final UserService userService;
 
     private final TaskManagementService taskManagementService;
 
-    public TaskController(UserService userService, TaskManagementService taskManagementService) {
-        this.userService = userService;
+    public TaskController(TaskManagementService taskManagementService) {
         this.taskManagementService = taskManagementService;
     }
-
 
     @PostMapping
     String create(@RequestBody @Valid CreateTaskReq task) {
@@ -33,7 +30,7 @@ public class TaskController {
        if (taskId != null) {
            return taskId.toString();
        } else {
-           throw new RuntimeException();
+           throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
        }
     }
 
@@ -42,8 +39,46 @@ public class TaskController {
         if (taskManagementService.editTask(convert(id, task))) {
             return;
         } else {
-            throw new RuntimeException();
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    @PutMapping("status/{id}")
+    void changeStatus(@PathVariable Long id, @RequestBody String status) {
+        if (taskManagementService.changeStatus(id, parseStatusOrThrow(status))) {
+            return;
+        } else {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    private static Status parseStatusOrThrow(String status) {
+        Status statusEnum;
+        try {
+            statusEnum = Status.valueOf(status);
+        } catch (Exception ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        }
+        return statusEnum;
+    }
+
+    @PutMapping("priority/{id}")
+    void changePriority(@PathVariable Long id, @RequestBody String priority) {
+        if (taskManagementService.changePriority(id, parcePriorityOrThrow(priority))) {
+            return;
+        } else {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    private static Priority parcePriorityOrThrow(String priority) {
+        Priority priorityEnum;
+        try {
+            priorityEnum = Priority.valueOf(priority);
+        } catch (Exception ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        }
+        return priorityEnum;
     }
 
     @GetMapping("{id}")

@@ -1,6 +1,7 @@
 package com.tpakhomova.tms.service;
 
 import com.tpakhomova.tms.data.Comment;
+import com.tpakhomova.tms.data.Priority;
 import com.tpakhomova.tms.data.Status;
 import com.tpakhomova.tms.data.Task;
 import org.springframework.stereotype.Component;
@@ -66,6 +67,15 @@ public interface TaskManagementService {
      * @return {@code true} if status was updated or {@code false} if there no task with such id.
      */
     boolean changeStatus(Long id, Status status);
+
+    /**
+     * Changes task priority.
+     *
+     * @param id task id.
+     * @param priority new priority.
+     * @return {@code true} if priority was updated or {@code false} if there no task with such id.
+     */
+    boolean changePriority(Long id, Priority priority);
 
     /**
      * Assigns task with given id onto user with given email.

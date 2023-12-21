@@ -171,8 +171,8 @@ class DemoTest {
         CreateTaskReq task1Req = new CreateTaskReq(
                 "Dima's first task",
                 "You should pass the interview",
-                Status.PROCESS,
-                Priority.MEDIUM,
+                Status.WAIT,
+                Priority.HIGH,
                 TANYA_USER.email(),
                 DIMA_USER.email()
         );
@@ -188,7 +188,7 @@ class DemoTest {
         CreateTaskReq task2req = new CreateTaskReq(
                 "Tanya's first task",
                 "I should pass the interview 100%",
-                Status.PROCESS,
+                Status.WAIT,
                 Priority.HIGH,
                 TANYA_USER.email(),
                 TANYA_USER.email()
@@ -235,7 +235,7 @@ class DemoTest {
         taskList = rest.exchange(
                 url("/tasks/assignee/" + TANYA_USER.email()),
                 HttpMethod.GET,
-                new HttpEntity<>(jwtHeader(token)),
+                authorized(token),
                 TaskList.class
         ).getBody();
 
@@ -284,6 +284,43 @@ class DemoTest {
         ).getStatusCode();
 
         assertThat(code.is4xxClientError()).isTrue();
+
+        // Change status
+        Task taskToUpdateStatus = rest.exchange(
+                url("/tasks/author/" + TANYA_USER.email()),
+                HttpMethod.GET,
+                new HttpEntity<>(jwtHeader(token)),
+                TaskList.class
+        ).getBody().tasks().get(0);
+
+        assertThat(taskToUpdateStatus.status()).isEqualTo(Status.WAIT);
+
+        code = rest.exchange(
+                url("/tasks/status/" + taskToUpdateStatus.id()),
+                HttpMethod.PUT,
+                new HttpEntity<>("PROCESS", jwtHeader(token)),
+                Void.class
+        ).getStatusCode();
+        assertThat(code.is2xxSuccessful()).isTrue();
+
+        // Update priority
+        code = rest.exchange(
+                url("/tasks/priority/" + taskToUpdateStatus.id()),
+                HttpMethod.PUT,
+                new HttpEntity<>("LOW", jwtHeader(token)),
+                Void.class
+        ).getStatusCode();
+        assertThat(code.is2xxSuccessful()).isTrue();
+
+        Task changedTask = rest.exchange(
+                url("/tasks/" + taskToUpdateStatus.id()),
+                HttpMethod.GET,
+                authorized(token),
+                Task.class
+        ).getBody();
+
+        assertThat(changedTask.status()).isEqualTo(Status.PROCESS);
+        assertThat(changedTask.priority()).isEqualTo(Priority.LOW);
     }
 
     @NotNull
