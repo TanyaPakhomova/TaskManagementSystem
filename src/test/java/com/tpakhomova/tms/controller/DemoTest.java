@@ -61,8 +61,32 @@ class DemoTest {
         ).getBody();
 
         for (var task: allUserTasks.tasks()) {
+            deleteTask(task.id(), token);
+        }
+
+        rest.exchange(
+                url("/unregister/" + user.email()),
+                HttpMethod.DELETE,
+                authorized(token),
+                String.class
+        );
+    }
+
+    private void deleteTask(Long id, String token) {
+        CommentList comments = rest.exchange(url("/comments/" + id),
+                HttpMethod.GET,
+                new HttpEntity<>(jwtHeader(token)),
+                CommentList.class
+        ).getBody();
+
+        // No comments for this task
+        if (comments == null) {
+            return;
+        }
+
+        for (var comment: comments.comments()) {
             rest.exchange(
-                    url("/tasks/" + task.id()),
+                    url("/comments/" + comment.commentId()),
                     HttpMethod.DELETE,
                     authorized(token),
                     String.class
@@ -70,7 +94,7 @@ class DemoTest {
         }
 
         rest.exchange(
-                url("/unregister/" + user.email()),
+                url("/tasks/" + id),
                 HttpMethod.DELETE,
                 authorized(token),
                 String.class
@@ -425,6 +449,77 @@ class DemoTest {
                 String.class
         ).getStatusCode();
         assertThat(code.is4xxClientError()).isTrue();
+    }
+
+    @Test
+    void comments() {
+        // Register two users
+        rest.postForObject(url("/register"), TANYA_USER, String.class);
+        rest.postForObject(url("/register"), DIMA_USER, String.class);
+
+        // Login as tanya
+        String token = rest.postForObject(
+                url("/login"),
+                new Credentials(TANYA_USER.email(), TANYA_USER.passHash()),
+                String.class
+        );
+
+        // Create task for dima
+        CreateTaskReq task1Req = new CreateTaskReq(
+                "Dima's first task",
+                "You should pass the interview",
+                Status.WAIT,
+                Priority.HIGH,
+                TANYA_USER.email(),
+                DIMA_USER.email()
+        );
+        rest.exchange(
+                url("/tasks"),
+                HttpMethod.POST,
+                new HttpEntity<>(task1Req, jwtHeader(token)),
+                String.class
+        );
+
+        // Create task for tanya
+        CreateTaskReq task2req = new CreateTaskReq(
+                "Tanya's first task",
+                "I should pass the interview 100%",
+                Status.WAIT,
+                Priority.HIGH,
+                TANYA_USER.email(),
+                TANYA_USER.email()
+        );
+        rest.exchange(
+                url("/tasks"),
+                HttpMethod.POST,
+                new HttpEntity<>(task2req, jwtHeader(token)),
+                String.class
+        );
+
+        Task task = rest.exchange(
+                url("/tasks/author/" + TANYA_USER.email()),
+                HttpMethod.GET,
+                new HttpEntity<>(jwtHeader(token)),
+                TaskList.class
+        ).getBody().tasks().get(0);
+
+        // Add comment
+        var code = rest.postForEntity(
+                url("/comments/" + task.id()),
+                new HttpEntity<>("I really like it!", jwtHeader(token)),
+                String.class
+        ).getStatusCode();
+        assertThat(code.is2xxSuccessful()).isTrue();
+
+        var comments = rest.exchange(
+                url("/comments/" + task.id()),
+                HttpMethod.GET,
+                new HttpEntity<>(jwtHeader(token)),
+                CommentList.class
+        ).getBody().comments();
+
+        assertThat(comments.size()).isEqualTo(1);
+
     }
 
     @NotNull
