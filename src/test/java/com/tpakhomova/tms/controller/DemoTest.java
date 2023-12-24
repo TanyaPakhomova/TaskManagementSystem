@@ -2,6 +2,7 @@ package com.tpakhomova.tms.controller;
 
 import com.tpakhomova.tms.api.*;
 import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +35,47 @@ class DemoTest {
     private int port;
     @Autowired
     private TestRestTemplate rest;
+
+    @AfterEach
+    void tearDown() {
+        deleteUser(TANYA_USER);
+        deleteUser(DIMA_USER);
+    }
+
+    private void deleteUser(User user) {
+        String token = rest.postForObject(
+                url("/login"),
+                new Credentials(user.email(), user.passHash()),
+                String.class
+        );
+        // No such user
+        if (token == null) {
+            return;
+        }
+
+        TaskList allUserTasks = rest.exchange(
+                url("/tasks/author/" + user.email()),
+                HttpMethod.GET,
+                new HttpEntity<>(jwtHeader(token)),
+                TaskList.class
+        ).getBody();
+
+        for (var task: allUserTasks.tasks()) {
+            rest.exchange(
+                    url("/tasks/" + task.id()),
+                    HttpMethod.DELETE,
+                    authorized(token),
+                    String.class
+            );
+        }
+
+        rest.exchange(
+                url("/unregister/" + user.email()),
+                HttpMethod.DELETE,
+                authorized(token),
+                String.class
+        );
+    }
 
     @Test
     void validUserOperations() {
@@ -321,6 +363,68 @@ class DemoTest {
 
         assertThat(changedTask.status()).isEqualTo(Status.PROCESS);
         assertThat(changedTask.priority()).isEqualTo(Priority.LOW);
+    }
+
+    @Test
+    void authorization() {
+        // Register two users
+        rest.postForObject(url("/register"), TANYA_USER, String.class);
+        rest.postForObject(url("/register"), DIMA_USER, String.class);
+
+        // Login as tanya
+        String token = rest.postForObject(
+                url("/login"),
+                new Credentials(TANYA_USER.email(), TANYA_USER.passHash()),
+                String.class
+        );
+
+        // Create task for herself
+        CreateTaskReq task1Req = new CreateTaskReq(
+                "Tanya's task",
+                "You should pass the interview",
+                Status.WAIT,
+                Priority.HIGH,
+                TANYA_USER.email(),
+                TANYA_USER.email()
+        );
+        rest.exchange(
+                url("/tasks"),
+                HttpMethod.POST,
+                new HttpEntity<>(task1Req, jwtHeader(token)),
+                String.class
+        );
+
+        // Login as dima
+        token = rest.postForObject(
+                url("/login"),
+                new Credentials(DIMA_USER.email(), DIMA_USER.passHash()),
+                String.class
+        );
+
+        // Change status
+        Task task = rest.exchange(
+                url("/tasks/author/" + TANYA_USER.email()),
+                HttpMethod.GET,
+                new HttpEntity<>(jwtHeader(token)),
+                TaskList.class
+        ).getBody().tasks().get(0);
+
+        var code = rest.exchange(
+                url("/tasks/status/" + task.id()),
+                HttpMethod.PUT,
+                new HttpEntity<>("PROCESS", jwtHeader(token)),
+                Void.class
+        ).getStatusCode();
+        assertThat(code.is4xxClientError()).isTrue();
+
+        // Can not delete task that is not created by current user
+        code = rest.exchange(
+                url("/tasks/" + task.id()),
+                HttpMethod.DELETE,
+                authorized(token),
+                String.class
+        ).getStatusCode();
+        assertThat(code.is4xxClientError()).isTrue();
     }
 
     @NotNull

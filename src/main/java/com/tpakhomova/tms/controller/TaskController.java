@@ -10,6 +10,8 @@ import com.tpakhomova.tms.service.UserService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -35,7 +37,13 @@ public class TaskController {
     }
 
     @PutMapping("{id}")
-    void edit(@PathVariable Long id, @RequestBody @Valid CreateTaskReq task) {
+    void edit(
+            @PathVariable Long id,
+              @RequestBody @Valid CreateTaskReq task,
+              @AuthenticationPrincipal UserDetails userDetails) {
+
+        checkValidRequest(id, userDetails.getUsername());
+
         if (taskManagementService.editTask(convert(id, task))) {
             return;
         } else {
@@ -43,8 +51,24 @@ public class TaskController {
         }
     }
 
+    private void checkValidRequest(Long id, String email) {
+        var originalTask = taskManagementService.findTask(id);
+        if (originalTask == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+
+        if (!email.equals(originalTask.getAuthorEmail())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+        }
+    }
+
     @PutMapping("status/{id}")
-    void changeStatus(@PathVariable Long id, @RequestBody String status) {
+    void changeStatus(
+            @PathVariable Long id,
+            @RequestBody String status,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        checkValidRequest(id, userDetails.getUsername());
         if (taskManagementService.changeStatus(id, parseStatusOrThrow(status))) {
             return;
         } else {
@@ -63,7 +87,13 @@ public class TaskController {
     }
 
     @PutMapping("priority/{id}")
-    void changePriority(@PathVariable Long id, @RequestBody String priority) {
+    void changePriority(
+            @PathVariable Long id,
+            @RequestBody String priority,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        checkValidRequest(id, userDetails.getUsername());
+
         if (taskManagementService.changePriority(id, parcePriorityOrThrow(priority))) {
             return;
         } else {
@@ -91,7 +121,8 @@ public class TaskController {
     }
 
     @DeleteMapping("{id}")
-    void delete(@PathVariable Long id) {
+    void delete(@PathVariable Long id, @AuthenticationPrincipal UserDetails userDetails) {
+        checkValidRequest(id, userDetails.getUsername());
         taskManagementService.deleteTask(id);
     }
 
