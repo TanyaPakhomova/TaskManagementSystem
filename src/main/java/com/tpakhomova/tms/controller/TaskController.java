@@ -7,6 +7,12 @@ import com.tpakhomova.tms.data.Priority;
 import com.tpakhomova.tms.data.Status;
 import com.tpakhomova.tms.service.TaskManagementService;
 import com.tpakhomova.tms.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import org.springframework.http.HttpStatus;
@@ -15,6 +21,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+@Tag(name = "Tasks", description = "Tasks management APIs.")
 @RestController
 @RequestMapping("tasks")
 public class TaskController {
@@ -24,7 +31,14 @@ public class TaskController {
     public TaskController(TaskManagementService taskManagementService) {
         this.taskManagementService = taskManagementService;
     }
-
+    @Operation(summary = "Create a task.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Task created",
+                    content = { @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = String.class)) }),
+            @ApiResponse(responseCode = "400", description = "Bad task parameters.",
+                    content = @Content),
+    })
     @PostMapping
     String create(@RequestBody @Valid CreateTaskReq task) {
        Long taskId = taskManagementService.createTask(convert(null, task));
@@ -32,10 +46,17 @@ public class TaskController {
        if (taskId != null) {
            return taskId.toString();
        } else {
-           throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
+           throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
        }
     }
 
+    @Operation(summary = "Edit a task.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Task edited",
+                    content = @Content()),
+            @ApiResponse(responseCode = "400", description = "Invalid task supplied",
+                    content = @Content())
+    })
     @PutMapping("{id}")
     void edit(
             @PathVariable Long id,
@@ -62,6 +83,13 @@ public class TaskController {
         }
     }
 
+    @Operation(summary = "Change task status.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Status changed",
+                    content = @Content()),
+            @ApiResponse(responseCode = "400", description = "Invalid parameters",
+                    content = @Content),
+    })
     @PutMapping("status/{id}")
     void changeStatus(
             @PathVariable Long id,
@@ -86,6 +114,13 @@ public class TaskController {
         return statusEnum;
     }
 
+    @Operation(summary = "Change task priority.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Priority changed",
+                    content = @Content()),
+            @ApiResponse(responseCode = "400", description = "Invalid parameters",
+                    content = @Content),
+    })
     @PutMapping("priority/{id}")
     void changePriority(
             @PathVariable Long id,
@@ -111,6 +146,14 @@ public class TaskController {
         return priorityEnum;
     }
 
+    @Operation(summary = "Get task by id.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Task returned.",
+                    content = { @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = Task.class)) }),
+            @ApiResponse(responseCode = "404", description = "No task with such id.",
+                    content = @Content),
+    })
     @GetMapping("{id}")
     Task getById(@PathVariable Long id) {
         var task = taskManagementService.findTask(id);
@@ -120,12 +163,23 @@ public class TaskController {
         return convertToApiTask(task);
     }
 
+    @Operation(summary = "Delete task by id.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Task deleted",
+                    content = @Content()),
+    })
     @DeleteMapping("{id}")
     void delete(@PathVariable Long id, @AuthenticationPrincipal UserDetails userDetails) {
         checkValidRequest(id, userDetails.getUsername());
         taskManagementService.deleteTask(id);
     }
 
+    @Operation(summary = "Get the list of tasks by author email.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Tasks returned",
+                    content = { @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = TaskList.class)) }),
+    })
     @GetMapping("author/{email}")
     TaskList getByAuthor(@PathVariable @Valid @Email String email) {
         var tasks = taskManagementService.findTasksByAuthor(email);
@@ -136,6 +190,7 @@ public class TaskController {
         return new TaskList(apiTasks);
     }
 
+    @Operation(summary = "Get the list of tasks by assignee email.")
     @GetMapping("assignee/{email}")
     TaskList getByAssignee(@PathVariable @Valid @Email String email) {
         var tasks = taskManagementService.findTasksByAssignee(email);

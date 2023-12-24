@@ -5,6 +5,12 @@ import com.tpakhomova.tms.data.Comment;
 import com.tpakhomova.tms.data.Priority;
 import com.tpakhomova.tms.data.Status;
 import com.tpakhomova.tms.service.TaskManagementService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import org.springframework.http.HttpStatus;
@@ -17,6 +23,7 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
 
+@Tag(name = "Comments", description = "Comments management APIs.")
 @RestController
 @RequestMapping("comments")
 public class CommentController {
@@ -28,6 +35,10 @@ public class CommentController {
         this.taskManagementService = taskManagementService;
     }
 
+    @Operation(summary = "Add comment to a task.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Comment added", content = @Content),
+    })
     @PostMapping("{taskId}")
     String create(
             @PathVariable Long taskId,
@@ -42,6 +53,13 @@ public class CommentController {
         return new Comment(null, taskId, authorEmail, text, Timestamp.from(Instant.now()));
     }
 
+    @Operation(summary = "Get all comments for task.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Comments returned",
+                    content = {
+                    @Content(mediaType = "application/json",
+                    schema = @Schema(implementation = CommentList.class)) }),
+    })
     @GetMapping("{taskId}")
     CommentList getByTaskId(@PathVariable Long taskId) {
         var task = taskManagementService.findTask(taskId);
@@ -53,6 +71,11 @@ public class CommentController {
         return new CommentList(convert(commentsForTask));
     }
 
+    @Operation(summary = "Delete comment by comment id.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Comment deleted",
+                    content = @Content()),
+    })
     @DeleteMapping("{commentId}")
     void deleteById(@PathVariable Long commentId) {
         taskManagementService.deleteComment(commentId);
